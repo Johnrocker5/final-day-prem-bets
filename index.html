@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0e14">
+<title>Prem Parlays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0e14;
+    background-image: radial-gradient(ellipse at top, #131a26 0%, #0a0e14 60%);
+    background-attachment: fixed;
+    color: #e8eaed;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 32px;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  h1 span { color: #d4e157; }
+  .cards {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .card {
+    background: #131820;
+    border: 1px solid #232a36;
+    border-radius: 14px;
+    padding: 20px 24px;
+    text-decoration: none;
+    color: #e8eaed;
+    min-width: 200px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .card:hover, .card:active { border-color: #d4e157; }
+  .card h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .card p {
+    font-size: 11px;
+    color: #8b949e;
+    line-height: 1.5;
+  }
+  .card .tag {
+    display: inline-block;
+    background: rgba(78,201,176,0.12);
+    color: #4ec9b0;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .card .tag.v1 { background: rgba(245,200,66,0.12); color: #f5c842; }
+</style>
+</head>
+<body>
+<h1>PREM <span>PARLAYS</span></h1>
+<div class="cards">
+  <a class="card" href="gameweek-37.html">
+    <h2>GW37</h2>
+    <p>9 fixtures · May 17–19, 2026</p>
+    <span class="tag">live</span>
+  </a>
+  <a class="card" href="gameweek-38.html">
+    <h2>GW38</h2>
+    <p>10 fixtures · Final Day, May 24</p>
+    <span class="tag">live</span>
+  </a>
+  <a class="card" href="parlay-tracker.html">
+    <h2>v1 Tracker</h2>
+    <p>URL-paste · per-leg odds</p>
+    <span class="tag v1">legacy</span>
+  </a>
+</div>
+</body>
+</html>

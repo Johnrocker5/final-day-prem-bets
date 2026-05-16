@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<title>Parlay · Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #0a0e14;
+    --bg-grad:      radial-gradient(ellipse at top, #131a26 0%, #0a0e14 60%);
+    --surface:      #131820;
+    --surface-2:    #1a1f29;
+    --surface-3:    #232a36;
+    --border:       #232a36;
+    --border-2:     #2d3543;
+    --text:         #e8eaed;
+    --text-dim:     #8b949e;
+    --text-dimmer:  #5a6273;
+    --green:        #4ec9b0;
+    --green-bg:     rgba(78, 201, 176, 0.12);
+    --red:          #f47174;
+    --red-bg:       rgba(244, 113, 116, 0.12);
+    --amber:        #f5c842;
+    --amber-bg:     rgba(245, 200, 66, 0.15);
+    --blue:         #56a3f5;
+    --accent:       #d4e157;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grad);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(env(safe-area-inset-bottom, 0) + 90px) env(safe-area-inset-left, 0);
+    overflow-x: hidden;
+  }
+
+  /* Subtle scanline texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,0.008) 2px,
+      rgba(255,255,255,0.008) 3px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ---- Header ---- */
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(10,14,20,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 18px 14px;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .brand .dot-sep { color: var(--accent); margin: 0 4px; }
+  .brand .live    { color: var(--accent); }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .status-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dimmer);
+    box-shadow: 0 0 6px currentColor;
+  }
+  .status-pill.live .dot   { background: var(--green); }
+  .status-pill.live        { color: var(--green); border-color: rgba(78,201,176,0.3); }
+  .status-pill.error .dot  { background: var(--red); }
+  .status-pill.error       { color: var(--red); border-color: rgba(244,113,116,0.3); }
+
+  .ticker {
+    margin-top: 10px;
+    font-size: 10px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ticker .meta { display: flex; gap: 14px; }
+
+  /* ---- Main ---- */
+  main {
+    position: relative;
+    z-index: 2;
+    padding: 16px 14px 0;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* ---- Empty state ---- */
+  .empty {
+    margin: 40px auto;
+    padding: 32px 24px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    color: var(--text-dim);
+    max-width: 360px;
+  }
+  .empty h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty p { font-size: 12px; line-height: 1.7; }
+
+  /* ---- Parlay card ---- */
+  .parlay {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .parlay.in-profit { border-color: rgba(78,201,176,0.4); }
+  .parlay.in-loss   { border-color: rgba(244,113,116,0.3); }
+
+  .parlay-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .parlay-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .parlay-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+  .parlay-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--border-2); }
+
+  .parlay-stakes {
+    display: flex;
+    gap: 18px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .parlay-stakes b { color: var(--text); font-weight: 600; letter-spacing: 0; }
+
+  .parlay-value {
+    padding: 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .value-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .value-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+  }
+  .value-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .value-amount.up   { color: var(--green); }
+  .value-amount.down { color: var(--red); }
+
+  .value-delta {
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .value-delta.up   { color: var(--green); }
+  .value-delta.down { color: var(--red); }
+
+  .value-prob {
+    text-align: right;
+  }
+  .prob-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 4px;
+  }
+  .prob-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  /* ---- Legs ---- */
+  .legs { padding: 4px 0; }
+  .leg {
+    padding: 11px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .leg:last-child { border-bottom: none; }
+
+  .leg-num {
+    font-family: 'JetBrains Mono';
+    color: var(--text-dimmer);
+    font-size: 10px;
+    width: 18px;
+  }
+
+  .leg-body {
+    min-width: 0;
+  }
+  .leg-desc {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .leg-meta {
+    color: var(--text-dimmer);
+    font-size: 10px;
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+
+  .leg-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
+  .leg-prob {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .leg-prob.high { color: var(--green); }
+  .leg-prob.mid  { color: var(--text); }
+  .leg-prob.low  { color: var(--red); }
+
+  .leg-status {
+    font-size: 8.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .leg-status.live    { background: var(--surface-3); color: var(--text-dim); }
+  .leg-status.pending { background: var(--amber-bg); color: var(--amber); }
+  .leg-status.settled { background: var(--green-bg); color: var(--green); }
+  .leg-status.lost    { background: var(--red-bg); color: var(--red); }
+  .leg-status.error   { background: var(--red-bg); color: var(--red); }
+
+  .leg.pending {
+    background: linear-gradient(90deg, var(--amber-bg), transparent 60%);
+  }
+  .leg.lost { opacity: 0.55; }
+  .leg.lost .leg-desc { text-decoration: line-through; }
+
+  .leg-actions {
+    margin-top: 6px;
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .pill-btn {
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+  }
+  .pill-btn:hover { color: var(--text); border-color: var(--text-dim); }
+  .pill-btn.win   { color: var(--green); border-color: rgba(78,201,176,0.4); }
+  .pill-btn.lose  { color: var(--red); border-color: rgba(244,113,116,0.4); }
+  .pill-btn.confirm { color: var(--amber); border-color: rgba(245,200,66,0.5); background: var(--amber-bg); }
+
+  /* ---- FAB ---- */
+  .fab {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 18px);
+    right: 18px;
+    left: 18px;
+    max-width: 360px;
+    margin: 0 auto;
+    z-index: 20;
+    background: var(--accent);
+    color: #0a0e14;
+    border: none;
+    border-radius: 999px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    padding: 14px 24px;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(212, 225, 87, 0.25);
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.97); }
+
+  /* ---- Modal ---- */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal[hidden] { display: none; }
+
+  .modal-content {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 18px 18px calc(env(safe-area-inset-bottom, 0) + 20px);
+    animation: slide-up 0.25s ease-out;
+  }
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+  }
+  .close-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  /* ---- Form ---- */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 11px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field-row3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+
+  .legs-form {
+    margin-top: 6px;
+  }
+  .leg-form {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .leg-form-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .leg-form-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+  }
+  .remove-leg-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .add-leg-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px dashed var(--border-2);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+  .add-leg-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0e14;
+  }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toast-in 0.2s ease-out;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  .hint {
+    font-size: 10px;
+    color: var(--text-dimmer);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .hint.warn { color: var(--amber); }
+
+  .conditional { display: none; }
+  .conditional.show { display: block; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">PARLAY <span class="dot-sep">·</span> <span class="live">LIVE</span></div>
+    <div class="status-pill" id="status-pill">
+      <span class="dot"></span><span id="status-text">BOOTING</span>
+    </div>
+  </div>
+  <div class="ticker">
+    <div class="meta">
+      <span id="parlay-count">0 parlays</span>
+      <span id="leg-count">0 legs</span>
+    </div>
+    <span id="last-update">—</span>
+  </div>
+</header>
+
+<main>
+  <div id="parlays-container"></div>
+  <div class="empty" id="empty-state">
+    <h2>No parlays yet</h2>
+    <p>Add your first parlay. Paste Polymarket market URLs per leg, your bookie's decimal odds, and let it run.</p>
+  </div>
+</main>
+
+<button class="fab" id="add-parlay-btn">+ NEW PARLAY</button>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">NEW PARLAY</div>
+      <button class="close-btn" id="close-modal">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Parlay name</label>
+        <input type="text" id="parlay-name" placeholder="Parlay A" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Stake</label>
+        <input type="number" id="parlay-stake" min="0" step="0.01" placeholder="50">
+      </div>
+    </div>
+
+    <div id="legs-form" class="legs-form"></div>
+
+    <button class="add-leg-btn" id="add-leg-btn">+ ADD LEG</button>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancel-btn">CANCEL</button>
+      <button class="btn-primary" id="save-btn">SAVE PARLAY</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   PARLAY · LIVE
+   Tracks multi-leg parlays during EPL games using Polymarket
+   live prices as cashout-equivalents, with 2up override.
+   ============================================================ */
+
+/* ---------- Persistent storage abstraction ---------- */
+const Store = {
+  KEY: 'parlay_state_v1',
+  async load() {
+    try {
+      // Claude artifact persistent storage
+      if (typeof window.storage !== 'undefined') {
+        const r = await window.storage.get(this.KEY);
+        if (r && r.value) return JSON.parse(r.value);
+        return null;
+      }
+    } catch (e) {
+      // Key doesn't exist or storage unavailable, fall through
+    }
+    try {
+      const v = localStorage.getItem(this.KEY);
+      return v ? JSON.parse(v) : null;
+    } catch { return null; }
+  },
+  async save(data) {
+    const str = JSON.stringify(data);
+    try {
+      if (typeof window.storage !== 'undefined') {
+        await window.storage.set(this.KEY, str);
+        return;
+      }
+    } catch {}
+    try { localStorage.setItem(this.KEY, str); } catch {}
+  }
+};
+
+/* ---------- State ---------- */
+const state = {
+  parlays: [],
+  scores: [],          // ESPN fixtures (live + scheduled today)
+  prices: {},          // slug -> { yes, no, fetchedAt, error }
+  status: 'booting',
+  lastUpdate: null,
+  editingId: null,     // currently-edited parlay id, or null for new
+  formLegs: []         // working set of legs in the open modal
+};
+
+/* ---------- IDs ---------- */
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+/* ---------- URL → slug ---------- */
+function extractSlug(input) {
+  if (!input) return '';
+  input = input.trim();
+  // Just a slug, no protocol
+  if (!input.includes('/') && !input.includes('.')) return input;
+  try {
+    const u = new URL(input.startsWith('http') ? input : 'https://' + input);
+    const parts = u.pathname.split('/').filter(Boolean);
+    // Polymarket: /event/{event-slug}/{market-slug} or /market/{market-slug}
+    return parts[parts.length - 1] || '';
+  } catch {
+    return input;
+  }
+}
+
+/* ---------- Polymarket Gamma API ---------- */
+async function fetchPolymarketMarket(slug) {
+  if (!slug) return { error: 'no slug' };
+  try {
+    const url = `https://gamma-api.polymarket.com/markets?slug=${encodeURIComponent(slug)}`;
+    const res = await fetch(url);
+    if (!res.ok) return { error: `HTTP ${res.status}` };
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return { error: 'market not found' };
+    const m = data[0];
+    let outcomes = m.outcomes;
+    let prices = m.outcomePrices;
+    if (typeof outcomes === 'string') outcomes = JSON.parse(outcomes);
+    if (typeof prices   === 'string') prices   = JSON.parse(prices);
+    const out = {};
+    outcomes.forEach((o, i) => { out[o.toLowerCase()] = parseFloat(prices[i]); });
+    return {
+      yes: out['yes'] ?? null,
+      no:  out['no']  ?? (out['yes'] != null ? 1 - out['yes'] : null),
+      closed: m.closed === true,
+      fetchedAt: Date.now()
+    };
+  } catch (e) {
+    return { error: e.message || 'network error' };
+  }
+}
+
+/* ---------- ESPN scoreboard ---------- */
+async function fetchScores() {
+  try {
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard';
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const d = await res.json();
+    return (d.events || []).map(e => {
+      const comp = (e.competitions || [])[0] || {};
+      const competitors = (comp.competitors || []).map(c => ({
+        team: c.team?.displayName || '',
+        abbr: c.team?.abbreviation || '',
+        short: c.team?.shortDisplayName || '',
+        score: parseInt(c.score, 10) || 0,
+        homeAway: c.homeAway
+      }));
+      return {
+        id: e.id,
+        name: e.name || '',
+        short: e.shortName || '',
+        status: e.status?.type?.name || '',
+        statusDetail: e.status?.type?.detail || '',
+        competitors
+      };
+    });
+  } catch (e) {
+    return [];
+  }
+}
+
+/* ---------- Fuzzy team match ---------- */
+function normalizeName(s) {
+  return (s || '').toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\b(fc|afc|the)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function teamMatches(a, b) {
+  if (!a || !b) return false;
+  const na = normalizeName(a);
+  const nb = normalizeName(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  // Word-overlap heuristic (handles "Crystal Palace" vs "Palace")
+  const wa = na.split(' ');
+  const wb = nb.split(' ');
+  return wa.some(w => w.length > 2 && wb.includes(w)) ||
+         wb.some(w => w.length > 2 && wa.includes(w));
+}
+
+function findMatchForLeg(leg, scores) {
+  if (!leg.teamName) return null;
+  return scores.find(m =>
+    m.competitors.some(c => teamMatches(c.team, leg.teamName))
+  );
+}
+
+/* ---------- 2up trigger detection ---------- */
+function check2up(leg, scores) {
+  if (leg.betType !== '1x2' || !leg.twoUpEligible) return false;
+  if (!leg.teamName) return false;
+  const match = findMatchForLeg(leg, scores);
+  if (!match) return false;
+  const status = (match.status || '').toUpperCase();
+  // Only counts during live play
+  const isLive = status.includes('IN') || status.includes('LIVE') ||
+                 status.includes('HALFTIME') || status.includes('HALF');
+  // We DO allow once final too — if team finished ≥2 ahead, the leg is settled anyway
+  const teamComp = match.competitors.find(c => teamMatches(c.team, leg.teamName));
+  const oppComp  = match.competitors.find(c => !teamMatches(c.team, leg.teamName));
+  if (!teamComp || !oppComp) return false;
+  return (teamComp.score - oppComp.score) >= 2;
+}
+
+/* ---------- Probability + cashout ---------- */
+function legProbability(leg) {
+  if (leg.status === '2up_settled' || leg.status === 'won') return 1.0;
+  if (leg.status === 'lost') return 0.0;
+  const price = state.prices[leg.slug];
+  if (!price || price.error) return null;
+  const p = leg.outcome === 'no' ? price.no : price.yes;
+  return (typeof p === 'number') ? p : null;
+}
+
+function parlayMath(parlay) {
+  const potential = parlay.stake * parlay.legs.reduce((a, l) => a * (Number(l.odds) || 0), 1);
+  let combinedProb = 1.0;
+  let anyMissing = false;
+  let anyDead = false;
+  for (const leg of parlay.legs) {
+    const p = legProbability(leg);
+    if (p === null) { anyMissing = true; continue; }
+    if (p === 0)    { anyDead = true; }
+    combinedProb *= p;
+  }
+  const liveValue = anyDead ? 0 : potential * combinedProb;
+  return { potential, combinedProb, liveValue, anyMissing, anyDead };
+}
+
+/* ---------- Rendering ---------- */
+function fmtMoney(n) {
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n) {
+  return (n * 100).toFixed(1) + '%';
+}
+
+const betTypeLabels = {
+  '1x2':   '1X2',
+  'dc':    'Double chance',
+  'btts':  'BTTS',
+  'ou':    'Over/Under',
+  'hcp':   'Handicap'
+};
+
+function legStatusText(leg) {
+  if (leg.status === 'won')          return { cls: 'settled', text: 'WON' };
+  if (leg.status === 'lost')         return { cls: 'lost',    text: 'LOST' };
+  if (leg.status === '2up_settled')  return { cls: 'settled', text: '2-UP ✓' };
+  if (leg.status === '2up_pending')  return { cls: 'pending', text: '2-UP PENDING' };
+  const price = state.prices[leg.slug];
+  if (price?.error) return { cls: 'error', text: price.error.toUpperCase().slice(0, 14) };
+  return { cls: 'live', text: 'LIVE' };
+}
+
+function probClass(p) {
+  if (p === null || p === undefined) return 'mid';
+  if (p >= 0.75) return 'high';
+  if (p <= 0.35) return 'low';
+  return 'mid';
+}
+
+function render() {
+  const container = document.getElementById('parlays-container');
+  const empty = document.getElementById('empty-state');
+  container.innerHTML = '';
+
+  document.getElementById('parlay-count').textContent =
+    state.parlays.length + ' parlay' + (state.parlays.length === 1 ? '' : 's');
+  const totalLegs = state.parlays.reduce((a, p) => a + p.legs.length, 0);
+  document.getElementById('leg-count').textContent =
+    totalLegs + ' leg' + (totalLegs === 1 ? '' : 's');
+
+  if (state.parlays.length === 0) {
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  for (const p of state.parlays) {
+    const math = parlayMath(p);
+    const up = math.liveValue >= p.stake;
+    const delta = math.liveValue - p.stake;
+    const deltaPct = p.stake > 0 ? (delta / p.stake) * 100 : 0;
+
+    const card = document.createElement('div');
+    card.className = 'parlay ' + (math.anyDead ? 'in-loss' : (up ? 'in-profit' : 'in-loss'));
+
+    card.innerHTML = `
+      <div class="parlay-head">
+        <div class="parlay-top">
+          <div class="parlay-name">${escapeHtml(p.name || 'Untitled')}</div>
+          <div class="parlay-actions">
+            <button class="icon-btn" data-act="edit" data-id="${p.id}" aria-label="Edit">✎</button>
+            <button class="icon-btn" data-act="del"  data-id="${p.id}" aria-label="Delete">✕</button>
+          </div>
+        </div>
+        <div class="parlay-stakes">
+          <span>STAKE <b>${fmtMoney(p.stake)}</b></span>
+          <span>POTENTIAL <b>${fmtMoney(math.potential)}</b></span>
+        </div>
+      </div>
+      <div class="parlay-value">
+        <div class="value-main">
+          <div class="value-label">Polymarket Cashout</div>
+          <div class="value-amount ${up ? 'up' : 'down'}">${fmtMoney(math.liveValue)}</div>
+          <div class="value-delta ${up ? 'up' : 'down'}">
+            ${delta >= 0 ? '▲' : '▼'} ${fmtMoney(Math.abs(delta))} (${deltaPct >= 0 ? '+' : ''}${deltaPct.toFixed(1)}%)
+            ${math.anyMissing ? ' · partial' : ''}
+          </div>
+        </div>
+        <div class="value-prob">
+          <div class="prob-label">Combined</div>
+          <div class="prob-amount">${(math.combinedProb * 100).toFixed(1)}%</div>
+        </div>
+      </div>
+      <div class="legs">
+        ${p.legs.map((leg, i) => renderLegRow(leg, i, p.id)).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+  // Wire actions
+  container.querySelectorAll('[data-act]').forEach(btn => {
+    btn.addEventListener('click', onCardAction);
+  });
+}
+
+function renderLegRow(leg, i, parlayId) {
+  const prob = legProbability(leg);
+  const status = legStatusText(leg);
+  const probStr = (prob === null) ? '—' : (prob * 100).toFixed(1) + '%';
+  const score = (() => {
+    const m = findMatchForLeg(leg, state.scores);
+    if (!m) return '';
+    const ts = m.competitors.find(c => teamMatches(c.team, leg.teamName));
+    const os = m.competitors.find(c => !teamMatches(c.team, leg.teamName));
+    if (!ts || !os) return '';
+    return `${ts.score}–${os.score}`;
+  })();
+
+  let actions = '';
+  if (leg.status === '2up_pending') {
+    actions = `
+      <div class="leg-actions">
+        <button class="pill-btn confirm" data-leg-act="confirm2up" data-pid="${parlayId}" data-lid="${leg.id}">CONFIRM 2UP</button>
+        <button class="pill-btn" data-leg-act="dismiss2up" data-pid="${parlayId}" data-lid="${leg.id}">DISMISS</button>
+      </div>`;
+  } else if (leg.status === 'in_play') {
+    actions = `
+      <div class="leg-actions">
+        <button class="pill-btn win"  data-leg-act="markwon"  data-pid="${parlayId}" data-lid="${leg.id}">WON</button>
+        <button class="pill-btn lose" data-leg-act="marklost" data-pid="${parlayId}" data-lid="${leg.id}">LOST</button>
+      </div>`;
+  } else if (leg.status === 'won' || leg.status === 'lost' || leg.status === '2up_settled') {
+    actions = `
+      <div class="leg-actions">
+        <button class="pill-btn" data-leg-act="reset" data-pid="${parlayId}" data-lid="${leg.id}">RESET</button>
+      </div>`;
+  }
+
+  return `
+    <div class="leg ${leg.status === '2up_pending' ? 'pending' : ''} ${leg.status === 'lost' ? 'lost' : ''}">
+      <div class="leg-num">L${i + 1}</div>
+      <div class="leg-body">
+        <div class="leg-desc">${escapeHtml(leg.description || '(no description)')}</div>
+        <div class="leg-meta">
+          ${betTypeLabels[leg.betType] || leg.betType} · ${escapeHtml(leg.outcome.toUpperCase())} @ ${Number(leg.odds).toFixed(2)}
+          ${score ? ' · ' + score : ''}
+        </div>
+      </div>
+      <div class="leg-right">
+        <div class="leg-prob ${probClass(prob)}">${probStr}</div>
+        <div class="leg-status ${status.cls}">${status.text}</div>
+        ${actions}
+      </div>
+    </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ---------- Card actions ---------- */
+function onCardAction(e) {
+  const act = e.currentTarget.dataset.act;
+  const id  = e.currentTarget.dataset.id;
+  if (act === 'edit') return openModal(id);
+  if (act === 'del')  return deleteParlay(id);
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-leg-act]');
+  if (!t) return;
+  const act = t.dataset.legAct;
+  const pid = t.dataset.pid;
+  const lid = t.dataset.lid;
+  const parlay = state.parlays.find(p => p.id === pid);
+  if (!parlay) return;
+  const leg = parlay.legs.find(l => l.id === lid);
+  if (!leg) return;
+  if (act === 'confirm2up') leg.status = '2up_settled';
+  if (act === 'dismiss2up') leg.status = 'in_play';
+  if (act === 'markwon')    leg.status = 'won';
+  if (act === 'marklost')   leg.status = 'lost';
+  if (act === 'reset')      leg.status = 'in_play';
+  persist(); render();
+});
+
+function deleteParlay(id) {
+  if (!confirm('Delete this parlay?')) return;
+  state.parlays = state.parlays.filter(p => p.id !== id);
+  persist();
+  render();
+}
+
+/* ---------- Modal ---------- */
+const modal = document.getElementById('modal');
+const legsForm = document.getElementById('legs-form');
+
+function openModal(parlayId) {
+  state.editingId = parlayId || null;
+  let name = '', stake = '';
+  if (parlayId) {
+    const p = state.parlays.find(x => x.id === parlayId);
+    if (p) {
+      name = p.name;
+      stake = p.stake;
+      state.formLegs = JSON.parse(JSON.stringify(p.legs));
+    }
+  } else {
+    state.formLegs = [makeEmptyLeg()];
+  }
+  document.getElementById('modal-title').textContent = parlayId ? 'EDIT PARLAY' : 'NEW PARLAY';
+  document.getElementById('parlay-name').value = name;
+  document.getElementById('parlay-stake').value = stake;
+  renderLegsForm();
+  modal.hidden = false;
+}
+
+function closeModal() {
+  modal.hidden = true;
+  state.editingId = null;
+  state.formLegs = [];
+}
+
+function makeEmptyLeg() {
+  return {
+    id: uid(),
+    description: '',
+    betType: '1x2',
+    teamName: '',           // team being backed (for 2up + score lookup)
+    polymarketUrl: '',
+    slug: '',
+    outcome: 'yes',
+    odds: '',
+    twoUpEligible: true,
+    status: 'in_play'
+  };
+}
+
+function renderLegsForm() {
+  legsForm.innerHTML = state.formLegs.map((leg, i) => `
+    <div class="leg-form" data-i="${i}">
+      <div class="leg-form-head">
+        <div class="leg-form-num">LEG ${i + 1}</div>
+        ${state.formLegs.length > 1 ? `<button class="remove-leg-btn" data-rm="${i}">REMOVE</button>` : ''}
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <input type="text" data-i="${i}" data-k="description" value="${escapeHtml(leg.description)}" placeholder="e.g. Arsenal to win">
+      </div>
+      <div class="field-row3">
+        <div class="field">
+          <label>Bet type</label>
+          <select data-i="${i}" data-k="betType">
+            ${Object.entries(betTypeLabels).map(([k, v]) =>
+              `<option value="${k}" ${leg.betType === k ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Outcome</label>
+          <select data-i="${i}" data-k="outcome">
+            <option value="yes" ${leg.outcome === 'yes' ? 'selected' : ''}>YES</option>
+            <option value="no"  ${leg.outcome === 'no'  ? 'selected' : ''}>NO</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Odds</label>
+          <input type="number" step="0.01" min="1" data-i="${i}" data-k="odds" value="${escapeHtml(leg.odds)}" placeholder="2.10">
+        </div>
+      </div>
+      <div class="field">
+        <label>Polymarket URL or slug</label>
+        <input type="text" data-i="${i}" data-k="polymarketUrl" value="${escapeHtml(leg.polymarketUrl)}" placeholder="https://polymarket.com/event/..." autocomplete="off">
+        <div class="hint">Outcome = YES if you're betting the affirmative side of the market, NO for the complement.</div>
+      </div>
+      <div class="conditional ${leg.betType === '1x2' ? 'show' : ''}" data-cond-1x2="${i}">
+        <div class="field">
+          <label>Team backed (for 2-up tracking + live score)</label>
+          <input type="text" data-i="${i}" data-k="teamName" value="${escapeHtml(leg.teamName)}" placeholder="Arsenal">
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" data-i="${i}" data-k="twoUpEligible" ${leg.twoUpEligible ? 'checked' : ''} style="width:auto;">
+            <span>2-up eligible (pre-match bet)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  legsForm.querySelectorAll('[data-i][data-k]').forEach(el => {
+    el.addEventListener('input', onLegFieldChange);
+    el.addEventListener('change', onLegFieldChange);
+  });
+  legsForm.querySelectorAll('[data-rm]').forEach(el => {
+    el.addEventListener('click', () => {
+      state.formLegs.splice(Number(el.dataset.rm), 1);
+      renderLegsForm();
+    });
+  });
+}
+
+function onLegFieldChange(e) {
+  const i = Number(e.target.dataset.i);
+  const k = e.target.dataset.k;
+  let v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+  state.formLegs[i][k] = v;
+  if (k === 'polymarketUrl') {
+    state.formLegs[i].slug = extractSlug(v);
+  }
+  if (k === 'betType') {
+    // show/hide 1X2 conditional
+    const cond = legsForm.querySelector(`[data-cond-1x2="${i}"]`);
+    if (cond) cond.classList.toggle('show', v === '1x2');
+  }
+}
+
+document.getElementById('add-parlay-btn').addEventListener('click', () => openModal());
+document.getElementById('close-modal').addEventListener('click', closeModal);
+document.getElementById('cancel-btn').addEventListener('click', closeModal);
+document.getElementById('add-leg-btn').addEventListener('click', () => {
+  state.formLegs.push(makeEmptyLeg());
+  renderLegsForm();
+});
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+document.getElementById('save-btn').addEventListener('click', () => {
+  const name = document.getElementById('parlay-name').value.trim() || 'Parlay';
+  const stake = parseFloat(document.getElementById('parlay-stake').value);
+  if (!stake || stake <= 0) return toast('Stake must be > 0');
+  if (state.formLegs.length === 0) return toast('Add at least one leg');
+
+  for (const leg of state.formLegs) {
+    if (!leg.odds || Number(leg.odds) < 1) return toast('Each leg needs decimal odds ≥ 1');
+    if (!leg.slug) return toast('Each leg needs a Polymarket URL');
+  }
+
+  const legs = state.formLegs.map(l => ({
+    ...l,
+    slug: extractSlug(l.polymarketUrl) || l.slug,
+    odds: Number(l.odds),
+    status: l.status || 'in_play'
+  }));
+
+  if (state.editingId) {
+    const idx = state.parlays.findIndex(p => p.id === state.editingId);
+    if (idx >= 0) state.parlays[idx] = { ...state.parlays[idx], name, stake, legs };
+  } else {
+    state.parlays.push({ id: uid(), name, stake, legs, createdAt: Date.now() });
+  }
+
+  closeModal();
+  persist();
+  render();
+  refresh();
+});
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2400);
+}
+
+/* ---------- Polling loop ---------- */
+async function refresh() {
+  setStatus('updating', 'UPDATING');
+
+  // Collect all unique slugs across parlays
+  const slugs = new Set();
+  for (const p of state.parlays) for (const l of p.legs) if (l.slug) slugs.add(l.slug);
+
+  // Fetch in parallel
+  const [scores, ...marketResults] = await Promise.all([
+    fetchScores(),
+    ...[...slugs].map(s => fetchPolymarketMarket(s).then(r => [s, r]))
+  ]);
+
+  state.scores = scores;
+  for (const [slug, result] of marketResults) {
+    state.prices[slug] = result;
+  }
+
+  // 2up trigger detection per leg
+  for (const p of state.parlays) {
+    for (const leg of p.legs) {
+      if (leg.status === 'won' || leg.status === 'lost' || leg.status === '2up_settled') continue;
+      if (check2up(leg, scores)) {
+        if (leg.status !== '2up_pending') {
+          leg.status = '2up_pending';
+          leg.twoUpDetectedAt = Date.now();
+          toast(`2-UP detected on ${leg.description || 'leg'}`);
+        }
+      }
+    }
+  }
+
+  state.lastUpdate = new Date();
+  document.getElementById('last-update').textContent =
+    'updated ' + state.lastUpdate.toLocaleTimeString();
+
+  // Determine overall status
+  const anyError = Object.values(state.prices).some(p => p && p.error);
+  if (slugs.size === 0) setStatus('idle', 'IDLE');
+  else if (anyError)    setStatus('error', 'PARTIAL DATA');
+  else                  setStatus('live', 'LIVE');
+
+  persist();
+  render();
+}
+
+function setStatus(cls, text) {
+  const pill = document.getElementById('status-pill');
+  pill.className = 'status-pill ' + cls;
+  document.getElementById('status-text').textContent = text;
+  state.status = cls;
+}
+
+/* ---------- Persistence ---------- */
+let persistDebounce = null;
+function persist() {
+  clearTimeout(persistDebounce);
+  persistDebounce = setTimeout(() => {
+    Store.save({ parlays: state.parlays });
+  }, 300);
+}
+
+/* ---------- Boot ---------- */
+(async () => {
+  const saved = await Store.load();
+  if (saved && Array.isArray(saved.parlays)) state.parlays = saved.parlays;
+  // Ensure each leg has a status
+  for (const p of state.parlays) for (const l of p.legs) if (!l.status) l.status = 'in_play';
+  render();
+  await refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+</body>
+</html>

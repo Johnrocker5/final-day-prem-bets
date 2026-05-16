@@ -1,0 +1,14 @@
+{
+  "name": "Prem Parlays GW37",
+  "short_name": "Prem GW37",
+  "start_url": "./gameweek-37.html",
+  "display": "standalone",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "description": "Live EPL parlay tracker for Gameweek 37 — May 17-19, 2026",
+  "icons": [{
+    "src": "icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Prem Parlays GW38",
+  "short_name": "Prem GW38",
+  "start_url": "./gameweek-38.html",
+  "display": "standalone",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "description": "Live EPL parlay tracker for Gameweek 38 — Final Day, May 24 2026",
+  "icons": [{
+    "src": "icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png"
+  }]
+}

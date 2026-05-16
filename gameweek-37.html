@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prem GW37">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest-gw37.json">
+<title>Parlay · Live · GW37</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #0a0e14;
+    --bg-grad:      radial-gradient(ellipse at top, #131a26 0%, #0a0e14 60%);
+    --surface:      #131820;
+    --surface-2:    #1a1f29;
+    --surface-3:    #232a36;
+    --border:       #232a36;
+    --border-2:     #2d3543;
+    --text:         #e8eaed;
+    --text-dim:     #8b949e;
+    --text-dimmer:  #5a6273;
+    --green:        #4ec9b0;
+    --green-bg:     rgba(78, 201, 176, 0.12);
+    --red:          #f47174;
+    --red-bg:       rgba(244, 113, 116, 0.12);
+    --amber:        #f5c842;
+    --amber-bg:     rgba(245, 200, 66, 0.15);
+    --blue:         #56a3f5;
+    --accent:       #d4e157;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    background-image: var(--bg-grad);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(env(safe-area-inset-bottom, 0) + 90px) env(safe-area-inset-left, 0);
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255,255,255,0.008) 2px,
+      rgba(255,255,255,0.008) 3px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  header.top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(10,14,20,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 18px 6px;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .brand .dot-sep { color: var(--accent); margin: 0 4px; }
+  .brand .live    { color: var(--accent); }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .status-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dimmer);
+    box-shadow: 0 0 6px currentColor;
+  }
+  .status-pill.live .dot   { background: var(--green); }
+  .status-pill.live        { color: var(--green); border-color: rgba(78,201,176,0.3); }
+  .status-pill.error .dot  { background: var(--red); }
+  .status-pill.error       { color: var(--red); border-color: rgba(244,113,116,0.3); }
+
+  .aggregate {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .agg-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .agg-label {
+    font-size: 8.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+  }
+  .agg-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .agg-value.up   { color: var(--green); }
+  .agg-value.down { color: var(--red); }
+
+  .ticker {
+    margin-top: 10px;
+    font-size: 10px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  main {
+    position: relative;
+    z-index: 2;
+    padding: 16px 14px 0;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .empty {
+    margin: 40px auto;
+    padding: 32px 24px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    color: var(--text-dim);
+    max-width: 360px;
+  }
+  .empty h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .empty p { font-size: 12px; line-height: 1.7; }
+
+  /* Parlay card */
+  .parlay {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .parlay.in-profit { border-color: rgba(78,201,176,0.4); }
+  .parlay.in-loss   { border-color: rgba(244,113,116,0.3); }
+
+  .parlay-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .parlay-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .parlay-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+  .parlay-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--border-2); }
+
+  .parlay-stakes {
+    display: flex;
+    gap: 18px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .parlay-stakes b { color: var(--text); font-weight: 600; letter-spacing: 0; }
+
+  .parlay-value {
+    padding: 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .value-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .value-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+  }
+  .value-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .value-amount.up   { color: var(--green); }
+  .value-amount.down { color: var(--red); }
+
+  .value-prob {
+    text-align: right;
+    min-width: 0;
+  }
+  .prob-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 4px;
+  }
+  .prob-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .prob-note {
+    font-size: 9px;
+    color: var(--amber);
+    margin-top: 2px;
+  }
+
+  /* Legs */
+  .legs-toggle {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    user-select: none;
+  }
+  .legs-toggle:hover { color: var(--text); }
+  .legs-toggle .arrow { transition: transform 0.2s; font-size: 8px; }
+  .legs-toggle.open .arrow { transform: rotate(90deg); }
+
+  .legs { display: none; padding: 4px 0; }
+  .legs.open { display: block; }
+  .leg {
+    padding: 10px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .leg:last-child { border-bottom: none; }
+  .leg-num {
+    color: var(--text-dimmer);
+    font-size: 10px;
+    width: 18px;
+  }
+  .leg-body { min-width: 0; }
+  .leg-desc {
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .leg-meta {
+    color: var(--text-dimmer);
+    font-size: 10px;
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+  .leg-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+  .leg-prob {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .leg-prob.high { color: var(--green); }
+  .leg-prob.mid  { color: var(--text); }
+  .leg-prob.low  { color: var(--red); }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 18px);
+    right: 18px;
+    left: 18px;
+    max-width: 360px;
+    margin: 0 auto;
+    z-index: 20;
+    background: var(--accent);
+    color: #0a0e14;
+    border: none;
+    border-radius: 999px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.08em;
+    padding: 14px 24px;
+    cursor: pointer;
+    box-shadow: 0 8px 30px rgba(212, 225, 87, 0.25);
+    transition: transform 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .fab:active { transform: scale(0.97); }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal.show { display: flex; }
+
+  .modal-content {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 560px;
+    max-height: 92vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 18px 18px calc(env(safe-area-inset-bottom, 0) + 20px);
+    animation: slide-up 0.25s ease-out;
+  }
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+  }
+  .close-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 11px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--accent);
+  }
+  .field-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+
+  .fixture-row {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .fixture-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+  .fixture-teams {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fixture-prices {
+    font-size: 10px;
+    color: var(--text-dimmer);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .fixture-body {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .fixture-body select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    flex: 1;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  .fixture-body select:focus { border-color: var(--accent); }
+  .fixture-prob {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--green);
+    white-space: nowrap;
+  }
+  .fixture-prob.missing { color: var(--text-dimmer); }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.06em;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0e14;
+  }
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toast-in 0.2s ease-out;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">PARLAY <span class="dot-sep">·</span> <span class="live">LIVE</span> <span class="dot-sep">·</span> <span style="font-size:18px;">GW37</span></div>
+    <div class="status-pill" id="status-pill">
+      <span class="dot"></span><span id="status-text">BOOTING</span>
+    </div>
+  </div>
+  <div class="aggregate" id="aggregate-strip">
+    <div class="agg-item">
+      <div class="agg-label">Stake</div>
+      <div class="agg-value" id="agg-stake">—</div>
+    </div>
+    <div class="agg-item">
+      <div class="agg-label">Payout</div>
+      <div class="agg-value" id="agg-payout">—</div>
+    </div>
+    <div class="agg-item">
+      <div class="agg-label">Exp. P&L</div>
+      <div class="agg-value" id="agg-ev">—</div>
+    </div>
+  </div>
+  <div class="ticker">
+    <span id="parlay-count">0 parlays</span>
+    <span id="last-update">—</span>
+  </div>
+</header>
+
+<main>
+  <div id="parlays-container"></div>
+  <div class="empty" id="empty-state">
+    <h2>No parlays yet</h2>
+    <p>Tap + NEW PARLAY to build your final-day acca. Pick a bet type per fixture — live probabilities from Polymarket power the math.</p>
+  </div>
+</main>
+
+<button type="button" class="fab" id="add-parlay-btn">+ NEW PARLAY</button>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">NEW PARLAY</div>
+      <button type="button" class="close-btn" id="close-modal">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Parlay name</label>
+        <input type="text" id="parlay-name" placeholder="Parlay A" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Stake (R)</label>
+        <input type="number" id="parlay-stake" min="0" step="0.01" placeholder="10">
+      </div>
+      <div class="field">
+        <label>Payout (R)</label>
+        <input type="number" id="parlay-payout" min="0" step="0.01" placeholder="50">
+      </div>
+    </div>
+    <div id="fixtures-form"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="cancel-btn">CANCEL</button>
+      <button type="button" class="btn-primary" id="save-btn">SAVE PARLAY</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   PARLAY · LIVE · GW37
+   Gameweek 37 EPL parlay tracker using Polymarket live prices.
+   ============================================================ */
+
+const FIXTURES = [
+  { base: 'epl-mun-not-2026-05-17', home: 'mun', away: 'not' },
+  { base: 'epl-lee-bri-2026-05-17', home: 'lee', away: 'bri' },
+  { base: 'epl-eve-sun-2026-05-17', home: 'eve', away: 'sun' },
+  { base: 'epl-bre-cry-2026-05-17', home: 'bre', away: 'cry' },
+  { base: 'epl-wol-ful-2026-05-17', home: 'wol', away: 'ful' },
+  { base: 'epl-new-wes-2026-05-17', home: 'new', away: 'wes' },
+  { base: 'epl-ars-bur-2026-05-18', home: 'ars', away: 'bur' },
+  { base: 'epl-che-tot-2026-05-19', home: 'che', away: 'tot' },
+  { base: 'epl-bou-mac-2026-05-19', home: 'bou', away: 'mac' },
+];
+
+const BET_TYPES = [
+  { value: 'none',   label: 'No bet' },
+  { value: '1x2',    label: '1X2' },
+  { value: 'dc',     label: 'Double chance' },
+  { value: 'hcp',    label: 'Handicap' },
+  { value: 'btts',   label: 'BTTS' },
+  { value: 'totals', label: 'Total goals' },
+];
+
+const HCP_OPTIONS = ['home_-1.5','home_-2.5','home_+1.5','home_+2.5','away_-1.5','away_-2.5','away_+1.5','away_+2.5'];
+const TOTALS_LINES = ['0.5','1.5','2.5','3.5','4.5','5.5'];
+
+function betOptions(betType) {
+  switch (betType) {
+    case '1x2': return [
+      { value: 'home', label: 'Home' },
+      { value: 'draw', label: 'Draw' },
+      { value: 'away', label: 'Away' },
+    ];
+    case 'dc': return [
+      { value: '1x', label: '1X (Home or Draw)' },
+      { value: 'x2', label: 'X2 (Draw or Away)' },
+    ];
+    case 'hcp': return HCP_OPTIONS.map(o => {
+      const [side, signed] = o.split('_');
+      const s = signed[0] === '-' ? signed : '+' + signed.slice(1);
+      return { value: o, label: `${side === 'home' ? 'Home' : 'Away'} ${s}` };
+    });
+    case 'btts': return [
+      { value: 'yes', label: 'Yes' },
+      { value: 'no',  label: 'No' },
+    ];
+    case 'totals': return TOTALS_LINES.flatMap(l => [
+      { value: `over_${l}`,  label: `Over ${l}` },
+      { value: `under_${l}`, label: `Under ${l}` },
+    ]);
+    default: return [];
+  }
+}
+
+/* ---------- Store ---------- */
+const Store = {
+  KEY: 'parlay_state_gw37',
+  load() {
+    try { const v = localStorage.getItem(this.KEY); return v ? JSON.parse(v) : null; }
+    catch { return null; }
+  },
+  save(data) {
+    try { localStorage.setItem(this.KEY, JSON.stringify(data)); } catch {}
+  }
+};
+
+/* ---------- State ---------- */
+const state = {
+  parlays: [],
+  priceBySlug: {},     // slug -> { outcomes: [...], prices: [...] }
+  teamNames: {},       // base -> { homeName, awayName }
+  status: 'booting',
+  lastUpdate: null,
+  editingId: null,
+  formLegs: [],        // [{ gameSlug, betType, option }] for modal
+  fixturesLoaded: false,
+};
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+/* ---------- Polymarket fetch ---------- */
+async function fetchEvent(slug) {
+  try {
+    const r = await fetch(`https://gamma-api.polymarket.com/events?slug=${encodeURIComponent(slug)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return Array.isArray(data) && data.length > 0 ? data[0] : null;
+  } catch { return null; }
+}
+
+function parseMarketOutcomes(m) {
+  let outcomes = m.outcomes;
+  let prices = m.outcomePrices;
+  if (typeof outcomes === 'string') outcomes = JSON.parse(outcomes);
+  if (typeof prices === 'string') prices = JSON.parse(prices);
+  return { outcomes: Array.isArray(outcomes) ? outcomes : [], prices: Array.isArray(prices) ? prices : [] };
+}
+
+function buildPriceMap(events) {
+  const map = {};
+  for (const evt of events) {
+    if (!evt || !evt.markets) continue;
+    for (const m of evt.markets) {
+      const parsed = parseMarketOutcomes(m);
+      map[m.slug] = parsed;
+    }
+  }
+  return map;
+}
+
+function extractTeamNames(evt, fixture) {
+  if (!evt || !evt.markets) return { homeName: fixture.home.toUpperCase(), awayName: fixture.away.toUpperCase() };
+  let homeName = null, awayName = null;
+  for (const m of evt.markets) {
+    const title = m.groupItemTitle || '';
+    const slug = m.slug || '';
+    if (slug.endsWith(`-${fixture.home}`) && title) homeName = title;
+    if (slug.endsWith(`-${fixture.away}`) && title) awayName = title;
+  }
+  if (!homeName && !awayName && evt.markets.length > 0) {
+    const q = evt.markets[0].question || evt.title || '';
+    const parts = q.split(' vs ');
+    if (parts.length === 2) {
+      homeName = parts[0].trim();
+      awayName = parts[1].split(' - ')[0].trim();
+    }
+  }
+  return {
+    homeName: homeName || fixture.home.toUpperCase(),
+    awayName: awayName || fixture.away.toUpperCase(),
+  };
+}
+
+/* ---------- Probability lookup ---------- */
+function priceOf(market, outcomeLabel) {
+  if (!market) return null;
+  const idx = market.outcomes.findIndex(o => o.toLowerCase() === outcomeLabel.toLowerCase());
+  if (idx === -1) return null;
+  return parseFloat(market.prices[idx]);
+}
+
+function priceOfTeam(market, teamName) {
+  if (!market || !teamName) return null;
+  const idx = market.outcomes.findIndex(o =>
+    o.toLowerCase().includes(teamName.toLowerCase()) ||
+    teamName.toLowerCase().includes(o.toLowerCase())
+  );
+  if (idx === -1) return null;
+  return parseFloat(market.prices[idx]);
+}
+
+function legProbability(leg, priceBySlug, fixture) {
+  const b = fixture.base;
+  const tname = state.teamNames[b];
+  if (!tname) return null;
+
+  switch (leg.betType) {
+    case '1x2': {
+      const team = leg.option === 'home' ? fixture.home
+                 : leg.option === 'away' ? fixture.away : 'draw';
+      return priceOf(priceBySlug[`${b}-${team}`], 'Yes');
+    }
+    case 'dc': {
+      const team = leg.option === '1x' ? fixture.away : fixture.home;
+      return priceOf(priceBySlug[`${b}-${team}`], 'No');
+    }
+    case 'btts':
+      return priceOf(priceBySlug[`${b}-btts`], leg.option === 'yes' ? 'Yes' : 'No');
+    case 'totals': {
+      const [side, line] = leg.option.split('_');
+      const slug = `${b}-total-${line.replace('.', 'pt')}`;
+      return priceOf(priceBySlug[slug], side === 'over' ? 'Over' : 'Under');
+    }
+    case 'hcp': {
+      const [side, signed] = leg.option.split('_');
+      const sign = signed[0];
+      const n = signed.slice(1);
+      const market = sign === '-' ? side : (side === 'home' ? 'away' : 'home');
+      const slug = `${b}-spread-${market}-${n.replace('.', 'pt')}`;
+      return priceOfTeam(priceBySlug[slug], side === 'home' ? tname.homeName : tname.awayName);
+    }
+    default: return null;
+  }
+}
+
+/* ---------- Description for display ---------- */
+function legDescription(leg, fixture) {
+  const tname = state.teamNames[fixture.base];
+  const h = tname ? tname.homeName : fixture.home.toUpperCase();
+  const a = tname ? tname.awayName : fixture.away.toUpperCase();
+  const match = `${h} vs ${a}`;
+
+  switch (leg.betType) {
+    case '1x2': {
+      const pick = leg.option === 'home' ? h : leg.option === 'away' ? a : 'Draw';
+      return `${match} · 1X2 · ${pick}`;
+    }
+    case 'dc': {
+      const pick = leg.option === '1x' ? `1X (${h}/Draw)` : `X2 (Draw/${a})`;
+      return `${match} · DC · ${pick}`;
+    }
+    case 'btts':
+      return `${match} · BTTS · ${leg.option === 'yes' ? 'Yes' : 'No'}`;
+    case 'totals': {
+      const [side, line] = leg.option.split('_');
+      return `${match} · ${side === 'over' ? 'Over' : 'Under'} ${line}`;
+    }
+    case 'hcp': {
+      const [side, signed] = leg.option.split('_');
+      const s = signed[0] === '-' ? signed : '+' + signed.slice(1);
+      const team = side === 'home' ? h : a;
+      return `${match} · HCP · ${team} ${s}`;
+    }
+    default: return match;
+  }
+}
+
+function legShortDescription(leg, fixture) {
+  const tname = state.teamNames[fixture.base];
+  const h = tname ? tname.homeName : fixture.home.toUpperCase();
+  const a = tname ? tname.awayName : fixture.away.toUpperCase();
+
+  switch (leg.betType) {
+    case '1x2': return leg.option === 'home' ? h : leg.option === 'away' ? a : 'Draw';
+    case 'dc': return leg.option === '1x' ? `1X` : 'X2';
+    case 'btts': return `BTTS ${leg.option === 'yes' ? 'Yes' : 'No'}`;
+    case 'totals': {
+      const [side, line] = leg.option.split('_');
+      return `${side === 'over' ? 'Over' : 'Under'} ${line}`;
+    }
+    case 'hcp': {
+      const [side, signed] = leg.option.split('_');
+      const s = signed[0] === '-' ? signed : '+' + signed.slice(1);
+      const team = side === 'home' ? h : a;
+      return `${team} ${s}`;
+    }
+    default: return '';
+  }
+}
+
+/* ---------- Parlay math ---------- */
+function parlayMath(parlay) {
+  let combinedProb = 1.0;
+  let anyMissing = false;
+  let anyDead = false;
+
+  for (const leg of parlay.legs) {
+    const fixture = FIXTURES.find(f => f.base === leg.gameSlug);
+    if (!fixture) continue;
+    const p = legProbability(leg, state.priceBySlug, fixture);
+    if (p === null) { anyMissing = true; continue; }
+    if (p === 0) { anyDead = true; }
+    combinedProb *= p;
+  }
+
+  const potential = parlay.payout || 0;
+  const ev = anyDead ? -parlay.stake : (potential * combinedProb - parlay.stake);
+  return { combinedProb, ev, anyMissing, anyDead };
+}
+
+/* ---------- Formatting ---------- */
+function fmtMoney(n) {
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtPct(n) {
+  return (n * 100).toFixed(1) + '%';
+}
+
+function probClass(p) {
+  if (p === null || p === undefined) return 'mid';
+  if (p >= 0.75) return 'high';
+  if (p <= 0.35) return 'low';
+  return 'mid';
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const container = document.getElementById('parlays-container');
+  const empty = document.getElementById('empty-state');
+  container.innerHTML = '';
+
+  document.getElementById('parlay-count').textContent =
+    state.parlays.length + ' parlay' + (state.parlays.length === 1 ? '' : 's');
+
+  if (state.parlays.length === 0) {
+    empty.style.display = '';
+    updateAggregate();
+    return;
+  }
+  empty.style.display = 'none';
+
+  for (const p of state.parlays) {
+    const math = parlayMath(p);
+    const up = math.ev >= 0;
+
+    const card = document.createElement('div');
+    card.className = 'parlay ' + (math.anyDead ? 'in-loss' : (up ? 'in-profit' : 'in-loss'));
+
+    card.innerHTML = `
+      <div class="parlay-head">
+        <div class="parlay-top">
+          <div class="parlay-name">${escapeHtml(p.name || 'Untitled')}</div>
+          <div class="parlay-actions">
+            <button class="icon-btn" data-act="edit" data-id="${p.id}" aria-label="Edit">✎</button>
+            <button class="icon-btn" data-act="del"  data-id="${p.id}" aria-label="Delete">✕</button>
+          </div>
+        </div>
+        <div class="parlay-stakes">
+          <span>STAKE <b>R${fmtMoney(p.stake)}</b></span>
+          <span>PAYOUT <b>R${fmtMoney(p.payout)}</b></span>
+        </div>
+      </div>
+      <div class="parlay-value">
+        <div class="value-main">
+          <div class="value-label">Expected P&amp;L</div>
+          <div class="value-amount ${up ? 'up' : 'down'}">${up ? '+' : ''}R${fmtMoney(math.ev)}</div>
+        </div>
+        <div class="value-prob">
+          <div class="prob-label">Combined</div>
+          <div class="prob-amount">${(math.combinedProb * 100).toFixed(1)}%</div>
+          ${math.anyMissing ? '<div class="prob-note">PARTIAL</div>' : ''}
+        </div>
+      </div>
+      <div class="legs-toggle" data-toggle="${p.id}">
+        <span class="arrow">▶</span> ${p.legs.length} leg${p.legs.length === 1 ? '' : 's'}
+      </div>
+      <div class="legs" id="legs-${p.id}">
+        ${p.legs.map((leg, i) => renderLegRow(leg, i, p)).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  container.querySelectorAll('[data-act]').forEach(btn => {
+    btn.addEventListener('click', onCardAction);
+  });
+  container.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', toggleLegs);
+  });
+
+  updateAggregate();
+}
+
+function renderLegRow(leg, i, parlay) {
+  const fixture = FIXTURES.find(f => f.base === leg.gameSlug);
+  if (!fixture) return '';
+  const prob = legProbability(leg, state.priceBySlug, fixture);
+  const probStr = (prob === null) ? '—' : (prob * 100).toFixed(1) + '%';
+  const desc = legDescription(leg, fixture);
+  const meta = legShortDescription(leg, fixture);
+
+  return `
+    <div class="leg">
+      <div class="leg-num">L${i + 1}</div>
+      <div class="leg-body">
+        <div class="leg-desc">${escapeHtml(desc)}</div>
+        <div class="leg-meta">${escapeHtml(meta)}</div>
+      </div>
+      <div class="leg-right">
+        <div class="leg-prob ${probClass(prob)}">${probStr}</div>
+      </div>
+    </div>`;
+}
+
+function updateAggregate() {
+  let totalStake = 0, totalPayout = 0, totalEv = 0;
+  for (const p of state.parlays) {
+    totalStake += p.stake || 0;
+    totalPayout += p.payout || 0;
+    const math = parlayMath(p);
+    totalEv += math.ev;
+  }
+  document.getElementById('agg-stake').textContent = state.parlays.length ? 'R' + fmtMoney(totalStake) : '—';
+  document.getElementById('agg-payout').textContent = state.parlays.length ? 'R' + fmtMoney(totalPayout) : '—';
+  const evEl = document.getElementById('agg-ev');
+  if (state.parlays.length) {
+    evEl.textContent = (totalEv >= 0 ? '+' : '') + 'R' + fmtMoney(totalEv);
+    evEl.className = 'agg-value ' + (totalEv >= 0 ? 'up' : 'down');
+  } else {
+    evEl.textContent = '—';
+    evEl.className = 'agg-value';
+  }
+}
+
+function toggleLegs(e) {
+  const pid = e.currentTarget.dataset.toggle;
+  const legs = document.getElementById('legs-' + pid);
+  const toggle = e.currentTarget;
+  legs.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+/* ---------- Card actions ---------- */
+function onCardAction(e) {
+  const act = e.currentTarget.dataset.act;
+  const id  = e.currentTarget.dataset.id;
+  if (act === 'edit') return openModal(id);
+  if (act === 'del')  return deleteParlay(id);
+}
+
+function deleteParlay(id) {
+  if (!confirm('Delete this parlay?')) return;
+  state.parlays = state.parlays.filter(p => p.id !== id);
+  persist(); render();
+}
+
+/* ---------- Modal ---------- */
+const modal = document.getElementById('modal');
+const fixturesForm = document.getElementById('fixtures-form');
+
+function openModal(parlayId) {
+  state.editingId = parlayId || null;
+  let name = '', stake = '', payout = '';
+
+  if (parlayId) {
+    const p = state.parlays.find(x => x.id === parlayId);
+    if (p) {
+      name = p.name;
+      stake = p.stake;
+      payout = p.payout;
+      state.formLegs = JSON.parse(JSON.stringify(p.legs));
+    }
+  } else {
+    state.formLegs = [];
+  }
+
+  document.getElementById('modal-title').textContent = parlayId ? 'EDIT PARLAY' : 'NEW PARLAY';
+  document.getElementById('parlay-name').value = name;
+  document.getElementById('parlay-stake').value = stake;
+  document.getElementById('parlay-payout').value = payout;
+  try {
+    renderFixturesForm();
+  } catch (e) {
+    toast('Error rendering form: ' + e.message);
+  }
+  modal.classList.add('show');
+}
+
+function closeModal() {
+  modal.classList.remove('show');
+  state.editingId = null;
+  state.formLegs = [];
+}
+
+function renderFixturesForm() {
+  const formLegsBySlug = {};
+  for (const l of state.formLegs) formLegsBySlug[l.gameSlug] = l;
+
+  fixturesForm.innerHTML = FIXTURES.map(f => {
+    const leg = formLegsBySlug[f.base] || { gameSlug: f.base, betType: 'none', option: '' };
+    const tname = state.teamNames[f.base];
+    const h = tname ? tname.homeName : f.home.toUpperCase();
+    const a = tname ? tname.awayName : f.away.toUpperCase();
+
+    let priceSummary = '';
+    const hSlug = `${f.base}-${f.home}`;
+    const dSlug = `${f.base}-draw`;
+    const aSlug = `${f.base}-${f.away}`;
+    const hp = priceOf(state.priceBySlug[hSlug], 'Yes');
+    const dp = priceOf(state.priceBySlug[dSlug], 'Yes');
+    const ap = priceOf(state.priceBySlug[aSlug], 'Yes');
+    if (hp !== null && dp !== null && ap !== null) {
+      priceSummary = `${(hp*100).toFixed(0)}% / ${(dp*100).toFixed(0)}% / ${(ap*100).toFixed(0)}%`;
+    }
+
+    const options = betOptions(leg.betType);
+    const optionsHtml = leg.betType !== 'none'
+      ? `<select data-fixture="${f.base}" data-field="option">
+           ${options.map(o => `<option value="${o.value}" ${leg.option === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
+         </select>`
+      : '';
+
+    let probHint = '';
+    if (leg.betType !== 'none' && leg.option) {
+      const prob = legProbability(leg, state.priceBySlug, f);
+      if (prob !== null) {
+        probHint = `<span class="fixture-prob">${(prob*100).toFixed(1)}%</span>`;
+      } else {
+        probHint = '<span class="fixture-prob missing">—</span>';
+      }
+    }
+
+    return `
+      <div class="fixture-row">
+        <div class="fixture-head">
+          <span class="fixture-teams">${escapeHtml(h)} vs ${escapeHtml(a)}</span>
+          <span class="fixture-prices">${priceSummary}</span>
+        </div>
+        <div class="fixture-body">
+          <select data-fixture="${f.base}" data-field="betType">
+            ${BET_TYPES.map(bt => `<option value="${bt.value}" ${leg.betType === bt.value ? 'selected' : ''}>${bt.label}</option>`).join('')}
+          </select>
+          ${optionsHtml}
+          ${probHint}
+        </div>
+      </div>`;
+  }).join('');
+
+  fixturesForm.querySelectorAll('select').forEach(el => {
+    el.addEventListener('change', onFixtureFieldChange);
+  });
+}
+
+function onFixtureFieldChange(e) {
+  const base = e.target.dataset.fixture;
+  const field = e.target.dataset.field;
+  const value = e.target.value;
+
+  let leg = state.formLegs.find(l => l.gameSlug === base);
+  if (!leg) {
+    leg = { id: uid(), gameSlug: base, betType: 'none', option: '' };
+    state.formLegs.push(leg);
+  }
+
+  if (field === 'betType') {
+    leg.betType = value;
+    leg.option = betOptions(value)[0]?.value || '';
+  } else if (field === 'option') {
+    leg.option = value;
+  }
+
+  renderFixturesForm();
+}
+
+/* ---------- Save ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  const fab = document.getElementById('add-parlay-btn');
+  if (fab) fab.addEventListener('click', () => {
+    try { openModal(); } catch (e) { toast('Error: ' + e.message); }
+  });
+  const closeBtn = document.getElementById('close-modal');
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  const cancelBtn = document.getElementById('cancel-btn');
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+  if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) saveBtn.addEventListener('click', () => {
+  const name = document.getElementById('parlay-name').value.trim() || 'Parlay';
+  const stake = parseFloat(document.getElementById('parlay-stake').value);
+  const payout = parseFloat(document.getElementById('parlay-payout').value);
+
+  if (isNaN(stake) || stake <= 0) return toast('Stake must be > 0');
+  if (isNaN(payout) || payout <= 0) return toast('Payout must be > 0');
+
+  const legs = state.formLegs
+    .filter(l => l.betType !== 'none' && l.option)
+    .map(l => ({
+      id: l.id || uid(),
+      gameSlug: l.gameSlug,
+      betType: l.betType,
+      option: l.option,
+    }));
+
+  if (legs.length === 0) return toast('Pick at least one bet');
+
+  if (state.editingId) {
+    const idx = state.parlays.findIndex(p => p.id === state.editingId);
+    if (idx >= 0) state.parlays[idx] = { ...state.parlays[idx], name, stake, payout, legs };
+  } else {
+    state.parlays.push({ id: uid(), name, stake, payout, legs, createdAt: Date.now() });
+  }
+
+  closeModal();
+  persist();
+  render();
+  refresh();
+  });
+});
+
+/* ---------- Toast ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2400);
+}
+
+window.onerror = function(msg, url, line) {
+  toast('JS error: ' + String(msg).slice(0, 60));
+};
+
+/* ---------- Polling ---------- */
+async function fetchAllEventData() {
+  const mainEvents = await Promise.all(FIXTURES.map(f => fetchEvent(f.base)));
+  const moreEvents = await Promise.all(FIXTURES.map(f => fetchEvent(`${f.base}-more-markets`)));
+
+  for (let i = 0; i < FIXTURES.length; i++) {
+    const tn = extractTeamNames(mainEvents[i], FIXTURES[i]);
+    state.teamNames[FIXTURES[i].base] = tn;
+  }
+
+  const allEvents = [...mainEvents, ...moreEvents].filter(Boolean);
+  const newMap = buildPriceMap(allEvents);
+  Object.assign(state.priceBySlug, newMap);
+  state.fixturesLoaded = true;
+}
+
+async function refreshActiveParlays() {
+  const bases = new Set();
+  for (const p of state.parlays) {
+    for (const l of p.legs) {
+      if (l.gameSlug) bases.add(l.gameSlug);
+    }
+  }
+
+  if (bases.size === 0) return;
+
+  const promises = [];
+  for (const b of bases) {
+    promises.push(fetchEvent(b));
+    promises.push(fetchEvent(`${b}-more-markets`));
+  }
+  const results = await Promise.all(promises);
+  const newMap = buildPriceMap(results);
+  Object.assign(state.priceBySlug, newMap);
+}
+
+async function refresh() {
+  setStatus('updating', 'UPDATING');
+
+  if (!state.fixturesLoaded) {
+    await fetchAllEventData();
+  } else {
+    await refreshActiveParlays();
+  }
+
+  state.lastUpdate = new Date();
+  document.getElementById('last-update').textContent =
+    'updated ' + state.lastUpdate.toLocaleTimeString();
+
+  const slugs = Object.keys(state.priceBySlug);
+  const anyError = slugs.length === 0 && state.parlays.length > 0;
+  if (slugs.length === 0) setStatus('idle', 'IDLE');
+  else if (anyError) setStatus('error', 'PARTIAL DATA');
+  else setStatus('live', 'LIVE');
+
+  persist();
+  render();
+}
+
+function setStatus(cls, text) {
+  const pill = document.getElementById('status-pill');
+  pill.className = 'status-pill ' + cls;
+  document.getElementById('status-text').textContent = text;
+  state.status = cls;
+}
+
+/* ---------- Persistence ---------- */
+let persistDebounce = null;
+function persist() {
+  clearTimeout(persistDebounce);
+  persistDebounce = setTimeout(() => {
+    Store.save({ parlays: state.parlays });
+  }, 300);
+}
+
+/* ---------- Boot ---------- */
+(async () => {
+  try {
+    const saved = Store.load();
+    if (saved && Array.isArray(saved.parlays)) state.parlays = saved.parlays;
+    render();
+    await refresh();
+    setInterval(refresh, 15000);
+  } catch (e) {
+    toast('Boot error: ' + e.message);
+    setStatus('error', 'ERROR');
+  }
+})();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw-gw37.js').catch(() => {});
+}
+</script>
+</body>
+</html>
