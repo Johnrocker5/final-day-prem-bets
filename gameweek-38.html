@@ -754,9 +754,17 @@ async function fetchEvent(slug) {
 function parseMarketOutcomes(m) {
   let outcomes = m.outcomes;
   let prices = m.outcomePrices;
+  let assetIds = m.clobTokenIds;
   if (typeof outcomes === 'string') outcomes = JSON.parse(outcomes);
   if (typeof prices === 'string') prices = JSON.parse(prices);
-  return { outcomes: Array.isArray(outcomes) ? outcomes : [], prices: Array.isArray(prices) ? prices : [] };
+  if (typeof assetIds === 'string') {
+    try { assetIds = JSON.parse(assetIds); } catch { assetIds = []; }
+  }
+  return {
+    outcomes: Array.isArray(outcomes) ? outcomes : [],
+    prices: Array.isArray(prices) ? prices : [],
+    assetIds: Array.isArray(assetIds) ? assetIds : [],
+  };
 }
 
 function buildPriceMap(events) {
@@ -1321,6 +1329,134 @@ function setStatus(cls, text) {
   state.status = cls;
 }
 
+/* ---------- WebSocket live feed ---------- */
+const WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws/market';
+let ws = null;
+let wsReconnectAttempts = 0;
+let wsReconnectTimer = null;
+let renderRaf = null;
+
+function buildAssetMap() {
+  state.assetIdMap = {};
+  for (const slug in state.priceBySlug) {
+    const m = state.priceBySlug[slug];
+    if (!m || !Array.isArray(m.assetIds)) continue;
+    m.assetIds.forEach((id, idx) => {
+      if (id) state.assetIdMap[id] = { slug, outcomeIdx: idx };
+    });
+  }
+}
+
+function topPrice(levels, dir) {
+  if (!Array.isArray(levels) || levels.length === 0) return null;
+  let best = null;
+  for (const l of levels) {
+    const p = parseFloat(l.price);
+    if (isNaN(p)) continue;
+    if (best === null) { best = p; continue; }
+    if (dir === 'desc' && p > best) best = p;
+    if (dir === 'asc'  && p < best) best = p;
+  }
+  return best;
+}
+
+function applyMid(slug, outcomeIdx, mid) {
+  const m = state.priceBySlug[slug];
+  if (!m || !Array.isArray(m.prices)) return false;
+  if (mid < 0 || mid > 1 || isNaN(mid)) return false;
+  m.prices[outcomeIdx] = mid.toFixed(4);
+  if (m.prices.length === 2) {
+    const otherIdx = outcomeIdx === 0 ? 1 : 0;
+    m.prices[otherIdx] = (1 - mid).toFixed(4);
+  }
+  return true;
+}
+
+function handleWsEvent(ev) {
+  if (!ev || !ev.event_type) return false;
+
+  if (ev.event_type === 'book') {
+    const map = state.assetIdMap[ev.asset_id];
+    if (!map) return false;
+    const bid = topPrice(ev.bids, 'desc');
+    const ask = topPrice(ev.asks, 'asc');
+    if (bid === null || ask === null) return false;
+    return applyMid(map.slug, map.outcomeIdx, (bid + ask) / 2);
+  }
+
+  if (ev.event_type === 'price_change') {
+    let any = false;
+    for (const pc of (ev.price_changes || [])) {
+      const map = state.assetIdMap[pc.asset_id];
+      if (!map) continue;
+      const bid = parseFloat(pc.best_bid);
+      const ask = parseFloat(pc.best_ask);
+      if (isNaN(bid) || isNaN(ask)) continue;
+      if (applyMid(map.slug, map.outcomeIdx, (bid + ask) / 2)) any = true;
+    }
+    return any;
+  }
+
+  return false;
+}
+
+function scheduleRender() {
+  if (renderRaf) return;
+  renderRaf = requestAnimationFrame(() => {
+    renderRaf = null;
+    render();
+    state.lastUpdate = new Date();
+    const ind = (ws && ws.readyState === WebSocket.OPEN) ? ' · live' : '';
+    document.getElementById('last-update').textContent =
+      'updated ' + state.lastUpdate.toLocaleTimeString() + ind;
+  });
+}
+
+function connectWs() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  const assetIds = Object.keys(state.assetIdMap || {});
+  if (assetIds.length === 0) return;
+
+  try { ws = new WebSocket(WS_URL); }
+  catch { scheduleWsReconnect(); return; }
+
+  ws.onopen = () => {
+    wsReconnectAttempts = 0;
+    try {
+      ws.send(JSON.stringify({
+        assets_ids: assetIds,
+        type: 'market',
+      }));
+      setStatus('live', 'LIVE');
+    } catch { /* ignore */ }
+  };
+
+  ws.onmessage = (e) => {
+    if (!e.data || e.data === 'PONG') return;
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    const events = Array.isArray(msg) ? msg : [msg];
+    let updated = false;
+    for (const ev of events) {
+      if (handleWsEvent(ev)) updated = true;
+    }
+    if (updated) scheduleRender();
+  };
+
+  ws.onclose = () => { scheduleWsReconnect(); };
+  ws.onerror = () => { /* onclose fires next */ };
+}
+
+function scheduleWsReconnect() {
+  if (wsReconnectTimer) return;
+  wsReconnectAttempts++;
+  const delay = Math.min(30000, 1000 * Math.pow(2, Math.min(wsReconnectAttempts - 1, 5)));
+  wsReconnectTimer = setTimeout(() => {
+    wsReconnectTimer = null;
+    if (document.visibilityState === 'visible') connectWs();
+  }, delay);
+}
+
 /* ---------- Persistence ---------- */
 let persistDebounce = null;
 function persist() {
@@ -1337,11 +1473,19 @@ function persist() {
     if (saved && Array.isArray(saved.parlays)) state.parlays = saved.parlays;
     render();
     await refresh();
-    setInterval(refresh, 15000);
+    buildAssetMap();
+    connectWs();
+    setInterval(refresh, 30000);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === 'visible') {
+        refresh();
+        connectWs();
+      }
     });
-    window.addEventListener('focus', () => refresh());
+    window.addEventListener('focus', () => {
+      refresh();
+      connectWs();
+    });
   } catch (e) {
     toast('Boot error: ' + e.message);
     setStatus('error', 'ERROR');
