@@ -742,7 +742,8 @@ function uid() { return Math.random().toString(36).slice(2, 10); }
 /* ---------- Polymarket fetch ---------- */
 async function fetchEvent(slug) {
   try {
-    const r = await fetch(`https://gamma-api.polymarket.com/events?slug=${encodeURIComponent(slug)}`);
+    const url = `https://gamma-api.polymarket.com/events?slug=${encodeURIComponent(slug)}&_t=${Date.now()}`;
+    const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) return null;
     const data = await r.json();
     return Array.isArray(data) && data.length > 0 ? data[0] : null;
@@ -1336,6 +1337,10 @@ function persist() {
     render();
     await refresh();
     setInterval(refresh, 15000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refresh();
+    });
+    window.addEventListener('focus', () => refresh());
   } catch (e) {
     toast('Boot error: ' + e.message);
     setStatus('error', 'ERROR');

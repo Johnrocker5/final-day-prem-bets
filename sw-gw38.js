@@ -1,4 +1,4 @@
-const CACHE = 'parlay-gw38-v1';
+const CACHE = 'parlay-gw38-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -34,7 +34,23 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for everything else
+  // Network-first for HTML so code updates land on next reload
+  const isHtml = e.request.mode === 'navigate' ||
+                 (e.request.headers.get('accept') || '').includes('text/html');
+  if (isHtml) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fetched = fetch(e.request).then(response => {
