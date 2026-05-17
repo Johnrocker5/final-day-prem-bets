@@ -1,4 +1,4 @@
-const CACHE = 'parlay-gw38-v3';
+const CACHE = 'parlay-gw38-v4';
 
 self.addEventListener('install', e => {
   e.waitUntil(

@@ -735,6 +735,7 @@ const state = {
   editingId: null,
   formLegs: [],        // [{ gameSlug, betType, option }] for modal
   fixturesLoaded: false,
+  openLegs: {},        // parlayId -> bool, persists across re-renders
 };
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -998,10 +999,10 @@ function render() {
           ${math.anyMissing ? '<div class="prob-note">PARTIAL</div>' : ''}
         </div>
       </div>
-      <div class="legs-toggle" data-toggle="${p.id}">
+      <div class="legs-toggle${state.openLegs[p.id] ? ' open' : ''}" data-toggle="${p.id}">
         <span class="arrow">▶</span> ${p.legs.length} leg${p.legs.length === 1 ? '' : 's'}
       </div>
-      <div class="legs" id="legs-${p.id}">
+      <div class="legs${state.openLegs[p.id] ? ' open' : ''}" id="legs-${p.id}">
         ${p.legs.map((leg, i) => renderLegRow(leg, i, p)).join('')}
       </div>
     `;
@@ -1061,6 +1062,7 @@ function updateAggregate() {
 
 function toggleLegs(e) {
   const pid = e.currentTarget.dataset.toggle;
+  state.openLegs[pid] = !state.openLegs[pid];
   const legs = document.getElementById('legs-' + pid);
   const toggle = e.currentTarget;
   legs.classList.toggle('open');
@@ -1399,16 +1401,20 @@ function handleWsEvent(ev) {
   return false;
 }
 
+let lastRenderAt = 0;
 function scheduleRender() {
   if (renderRaf) return;
-  renderRaf = requestAnimationFrame(() => {
+  const elapsed = Date.now() - lastRenderAt;
+  const delay = Math.max(0, 250 - elapsed);
+  renderRaf = setTimeout(() => {
     renderRaf = null;
+    lastRenderAt = Date.now();
     render();
     state.lastUpdate = new Date();
     const ind = (ws && ws.readyState === WebSocket.OPEN) ? ' · live' : '';
     document.getElementById('last-update').textContent =
       'updated ' + state.lastUpdate.toLocaleTimeString() + ind;
-  });
+  }, delay);
 }
 
 function connectWs() {
